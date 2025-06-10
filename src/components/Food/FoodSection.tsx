@@ -1,81 +1,37 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { UtensilsCrossed, Clock, Star, MessageCircle, ChefHat, MapPin } from 'lucide-react'
-
-// Mock food data
-const foodItems = [
-  {
-    id: '1',
-    name: 'جولوف رايس نيجيري أصلي',
-    chef: 'فاطمة عبدالله',
-    nationality: '🇳🇬',
-    price: 30,
-    description: 'أرز جولوف نيجيري تقليدي مطبوخ بالطماطم والتوابل الأفريقية الأصلية مع الدجاج والخضار.',
-    image: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400&h=300&fit=crop',
-    rating: 4.8,
-    prepTime: '45 دقيقة',
-    servings: 4,
-    location: 'المبنى أ - الدور الثاني',
-    available: true,
-    tags: ['حلال', 'حار', 'أفريقي'],
-    phone: '+201234567890'
-  },
-  {
-    id: '2',
-    name: 'ناسي لماك الماليزي',
-    chef: 'أحمد حسن',
-    nationality: '🇲🇾',
-    price: 25,
-    description: 'أرز جوز الهند الماليزي التقليدي مع السمبل والخيار والبيض المسلوق والفول السوداني.',
-    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
-    rating: 4.9,
-    prepTime: '30 دقيقة',
-    servings: 2,
-    location: 'المبنى ب - الدور الأول',
-    available: true,
-    tags: ['حلال', 'حار', 'آسيوي'],
-    phone: '+201234567891'
-  },
-  {
-    id: '3',
-    name: 'كباب هندي بالتوابل',
-    chef: 'عائشة محمد',
-    nationality: '🇮🇳',
-    price: 35,
-    description: 'كباب هندي مشوي بالتوابل الهندية الأصلية مع الأرز البسمتي والسلطة.',
-    image: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=400&h=300&fit=crop',
-    rating: 4.7,
-    prepTime: '60 دقيقة',
-    servings: 3,
-    location: 'المبنى ج - الدور الثالث',
-    available: false,
-    tags: ['حلال', 'حار', 'هندي'],
-    phone: '+201234567892'
-  },
-  {
-    id: '4',
-    name: 'مندي يمني أصلي',
-    chef: 'سالم العبسي',
-    nationality: '🇾🇪',
-    price: 40,
-    description: 'مندي يمني تقليدي مطبوخ في التنور مع اللحم والأرز البسمتي والسلطة اليمنية.',
-    image: 'https://images.unsplash.com/photo-1574484284002-952d92456975?w=400&h=300&fit=crop',
-    rating: 5.0,
-    prepTime: '90 دقيقة',
-    servings: 6,
-    location: 'المبنى د - الدور الأول',
-    available: true,
-    tags: ['حلال', 'عربي', 'تقليدي'],
-    phone: '+201234567893'
-  }
-]
+import { UtensilsCrossed, Clock, Star, MessageCircle, ChefHat, MapPin, Loader2 } from 'lucide-react'
+import { useFoodListings } from '../../hooks/useBackend'
+import LoadingSpinner from '../Common/LoadingSpinner'
 
 const FoodSection = () => {
+  const [currentPage, setCurrentPage] = useState(1)
 
-  const handleOrder = (food: typeof foodItems[0]) => {
+  // Fetch food listings from backend
+  const {
+    listings,
+    loading,
+    error,
+    totalCount,
+    totalPages,
+    refetch
+  } = useFoodListings({
+    availableOnly: true,
+    page: currentPage,
+    limit: 8
+  })
+
+  const handleOrder = (food: any) => {
     const message = `السلام عليكم، أريد طلب ${food.name} من ${food.chef} بسعر ${food.price} جنيه.`
-    const whatsappUrl = `https://wa.me/${food.phone.replace('+', '')}?text=${encodeURIComponent(message)}`
+    const whatsappUrl = `https://wa.me/${food.chefPhone?.replace('+', '')}?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
+  }
+
+  // Handle load more
+  const handleLoadMore = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1)
+    }
   }
 
   return (
@@ -101,9 +57,38 @@ const FoodSection = () => {
           </p>
         </motion.div>
 
+        {/* Error Handling */}
+        {error && (
+          <motion.div
+            className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <p className="text-red-600 font-arabic">
+              حدث خطأ في تحميل قائمة الطعام: {error}
+            </p>
+            <button
+              onClick={refetch}
+              className="mt-2 text-red-600 hover:text-red-800 underline font-arabic"
+            >
+              إعادة المحاولة
+            </button>
+          </motion.div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center py-16">
+            <LoadingSpinner />
+          </div>
+        )}
+
         {/* Food Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {foodItems.map((food, index) => (
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {listings.map((food, index) => (
             <motion.div
               key={food.id}
               className="card-islamic hover:scale-105 transition-all duration-300 overflow-hidden"
@@ -206,8 +191,50 @@ const FoodSection = () => {
                 </button>
               </div>
             </motion.div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+
+        {/* Load More Button */}
+        {!loading && !error && currentPage < totalPages && (
+          <motion.div
+            className="text-center mt-12"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <button
+              className="btn-secondary inline-flex items-center gap-2 disabled:opacity-50"
+              onClick={handleLoadMore}
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : null}
+              <span className="font-arabic">عرض المزيد من الأطباق</span>
+            </button>
+          </motion.div>
+        )}
+
+        {/* No Food Message */}
+        {!loading && !error && listings.length === 0 && (
+          <motion.div
+            className="text-center py-16"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <div className="text-6xl mb-4">🍽️</div>
+            <h3 className="text-xl font-semibold text-navy-500 mb-2 font-arabic">
+              لا توجد أطباق متوفرة حالياً
+            </h3>
+            <p className="text-navy-500/70 font-arabic">
+              سيتم عرض الأطباق المتوفرة هنا عند إضافتها
+            </p>
+          </motion.div>
+        )}
 
         {/* Add Your Food */}
         <motion.div

@@ -1,60 +1,9 @@
 
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Newspaper, AlertCircle, Calendar, Clock, Pin } from 'lucide-react'
-
-// Mock news data
-const newsItems = [
-  {
-    id: '1',
-    type: 'announcement',
-    title: 'انقطاع المياه غداً من الساعة 10 صباحاً حتى 4 عصراً',
-    content: 'سيتم قطع المياه عن جميع المباني غداً الثلاثاء للصيانة الدورية. يرجى تخزين المياه مسبقاً.',
-    date: '2024-01-15',
-    time: '09:30',
-    priority: 'high',
-    building: 'جميع المباني'
-  },
-  {
-    id: '2',
-    type: 'event',
-    title: 'أمسية ثقافية: "ليلة التراث العربي"',
-    content: 'ندعوكم لحضور أمسية ثقافية مميزة تتضمن شعر وموسيقى تراثية من مختلف البلدان العربية.',
-    date: '2024-01-18',
-    time: '19:00',
-    priority: 'medium',
-    building: 'القاعة الكبرى'
-  },
-  {
-    id: '3',
-    type: 'lost-found',
-    title: 'مفقود: محفظة جلدية بنية اللون',
-    content: 'فُقدت محفظة جلدية بنية تحتوي على بطاقات شخصية ومبلغ من المال. من يجدها يرجى التواصل.',
-    date: '2024-01-14',
-    time: '14:20',
-    priority: 'medium',
-    building: 'المبنى أ'
-  },
-  {
-    id: '4',
-    type: 'rule',
-    title: 'قواعد جديدة لاستخدام المطبخ المشترك',
-    content: 'تم وضع قواعد جديدة لاستخدام المطبخ المشترك لضمان النظافة والتنظيم. يرجى الاطلاع عليها.',
-    date: '2024-01-12',
-    time: '16:45',
-    priority: 'low',
-    building: 'جميع المباني'
-  },
-  {
-    id: '5',
-    type: 'maintenance',
-    title: 'صيانة المصاعد في المبنى ب',
-    content: 'سيتم إجراء صيانة دورية للمصاعد في المبنى ب يوم الجمعة. يرجى استخدام السلالم.',
-    date: '2024-01-19',
-    time: '08:00',
-    priority: 'medium',
-    building: 'المبنى ب'
-  }
-]
+import { Newspaper, AlertCircle, Calendar, Clock, Pin, Loader2 } from 'lucide-react'
+import { useNews } from '../../hooks/useBackend'
+import LoadingSpinner from '../Common/LoadingSpinner'
 
 const getTypeIcon = (type: string) => {
   switch (type) {
@@ -88,6 +37,33 @@ const getPriorityBorder = (priority: string) => {
 }
 
 const NewsSection = () => {
+  const [currentPage, setCurrentPage] = useState(1)
+
+  // Fetch news from backend
+  const {
+    news,
+    loading,
+    error,
+    totalCount,
+    totalPages,
+    refetch
+  } = useNews({
+    page: currentPage,
+    limit: 10
+  })
+
+  // Get high priority news for ticker
+  const highPriorityNews = useMemo(() => {
+    return news.find(item => item.priority === 'high')
+  }, [news])
+
+  // Handle load more
+  const handleLoadMore = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1)
+    }
+  }
+
   return (
     <section id="news" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -111,26 +87,57 @@ const NewsSection = () => {
           </p>
         </motion.div>
 
+        {/* Error Handling */}
+        {error && (
+          <motion.div
+            className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <p className="text-red-600 font-arabic">
+              حدث خطأ في تحميل الأخبار: {error}
+            </p>
+            <button
+              onClick={refetch}
+              className="mt-2 text-red-600 hover:text-red-800 underline font-arabic"
+            >
+              إعادة المحاولة
+            </button>
+          </motion.div>
+        )}
+
         {/* News Ticker for High Priority */}
-        <motion.div
-          className="bg-crimson-500 text-white p-4 rounded-lg mb-12 overflow-hidden"
-          initial={{ opacity: 0, x: -50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-        >
-          <div className="flex items-center gap-3">
-            <AlertCircle className="w-6 h-6 flex-shrink-0" />
-            <div className="font-arabic font-medium">
-              إعلان عاجل: {newsItems.find(item => item.priority === 'high')?.title}
+        {!loading && !error && highPriorityNews && (
+          <motion.div
+            className="bg-crimson-500 text-white p-4 rounded-lg mb-12 overflow-hidden"
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-6 h-6 flex-shrink-0" />
+              <div className="font-arabic font-medium">
+                إعلان عاجل: {highPriorityNews.title}
+              </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center py-16">
+            <LoadingSpinner />
           </div>
-        </motion.div>
+        )}
 
         {/* News Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {newsItems.map((item, index) => {
-            const IconComponent = getTypeIcon(item.type)
+        {!loading && !error && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {news.map((item, index) => {
+              const IconComponent = getTypeIcon(item.type)
             
             return (
               <motion.div
@@ -190,21 +197,50 @@ const NewsSection = () => {
                 </div>
               </motion.div>
             )
-          })}
-        </div>
+            })}
+          </div>
+        )}
 
         {/* Load More Button */}
-        <motion.div
-          className="text-center mt-12"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-        >
-          <button className="btn-secondary">
-            <span className="font-arabic">عرض المزيد من الأخبار</span>
-          </button>
-        </motion.div>
+        {!loading && !error && currentPage < totalPages && (
+          <motion.div
+            className="text-center mt-12"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <button
+              className="btn-secondary inline-flex items-center gap-2 disabled:opacity-50"
+              onClick={handleLoadMore}
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : null}
+              <span className="font-arabic">عرض المزيد من الأخبار</span>
+            </button>
+          </motion.div>
+        )}
+
+        {/* No News Message */}
+        {!loading && !error && news.length === 0 && (
+          <motion.div
+            className="text-center py-16"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <div className="text-6xl mb-4">📰</div>
+            <h3 className="text-xl font-semibold text-navy-500 mb-2 font-arabic">
+              لا توجد أخبار حالياً
+            </h3>
+            <p className="text-navy-500/70 font-arabic">
+              سيتم عرض الأخبار والإعلانات هنا عند توفرها
+            </p>
+          </motion.div>
+        )}
       </div>
     </section>
   )

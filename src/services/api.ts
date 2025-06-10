@@ -3,17 +3,32 @@
 
 import Parse from 'parse';
 
-// Initialize Parse
+// Check if Parse should be initialized
+const shouldInitializeParse = () => {
+  const appId = import.meta.env.VITE_BACK4APP_APP_ID;
+  const jsKey = import.meta.env.VITE_BACK4APP_JS_KEY;
+  return appId && jsKey && appId !== 'YOUR_APP_ID' && jsKey !== 'YOUR_JS_KEY';
+};
+
+// Initialize Parse only if credentials are available
 const initializeParse = () => {
-  Parse.initialize(
-    import.meta.env.VITE_BACK4APP_APP_ID || 'YOUR_APP_ID',
-    import.meta.env.VITE_BACK4APP_JS_KEY || 'YOUR_JS_KEY'
-  );
-  Parse.serverURL = import.meta.env.VITE_BACK4APP_SERVER_URL || 'https://parseapi.back4app.com/';
+  if (shouldInitializeParse()) {
+    Parse.initialize(
+      import.meta.env.VITE_BACK4APP_APP_ID,
+      import.meta.env.VITE_BACK4APP_JS_KEY
+    );
+    Parse.serverURL = import.meta.env.VITE_BACK4APP_SERVER_URL || 'https://parseapi.back4app.com/';
+    console.log('Parse initialized successfully');
+  } else {
+    console.warn('Parse not initialized - missing environment variables. Using mock data.');
+  }
 };
 
 // Call initialization
 initializeParse();
+
+// Check if Parse is available
+const isParseAvailable = () => shouldInitializeParse();
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -108,6 +123,33 @@ export const studentProfilesAPI = {
     totalPages: number;
   }> {
     try {
+      if (!isParseAvailable()) {
+        // Return mock data when Parse is not available
+        const mockProfiles: StudentProfile[] = [
+          {
+            id: '1',
+            name: 'أحمد محمد',
+            nationality: 'مصر',
+            flag: '🇪🇬',
+            languages: ['العربية', 'الإنجليزية'],
+            skills: ['البرمجة', 'التصميم'],
+            rating: 4.8,
+            location: 'القاهرة',
+            bio: 'طالب هندسة حاسوب',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+            isOnline: true,
+            whatsappNumber: '+201234567890'
+          }
+        ];
+
+        return {
+          profiles: mockProfiles,
+          totalCount: mockProfiles.length,
+          currentPage: 1,
+          totalPages: 1
+        };
+      }
+
       const result = await Parse.Cloud.run('getStudentProfiles', filters);
       return result;
     } catch (error) {
@@ -125,6 +167,15 @@ export const studentProfilesAPI = {
     message: string;
   }> {
     try {
+      if (!isParseAvailable()) {
+        // Mock response when Parse is not available
+        return {
+          success: true,
+          profileId: 'mock-profile-id',
+          message: 'تم حفظ الملف الشخصي بنجاح (وضع التجربة)'
+        };
+      }
+
       const result = await Parse.Cloud.run('saveStudentProfile', { profileData });
       return result;
     } catch (error) {
@@ -138,12 +189,18 @@ export const studentProfilesAPI = {
    */
   async updateOnlineStatus(isOnline: boolean): Promise<void> {
     try {
+      if (!isParseAvailable()) {
+        // Mock behavior when Parse is not available
+        console.log(`Mock: Updated online status to ${isOnline}`);
+        return;
+      }
+
       const user = Parse.User.current();
       if (user) {
         const query = new Parse.Query('StudentProfile');
         query.equalTo('user', user);
         const profile = await query.first();
-        
+
         if (profile) {
           profile.set('isOnline', isOnline);
           profile.set('lastSeen', new Date());
@@ -320,6 +377,18 @@ export const statsAPI = {
    */
   async getStats(): Promise<AppStats> {
     try {
+      if (!isParseAvailable()) {
+        // Return mock stats when Parse is not available
+        return {
+          studentsCount: 500,
+          itemsCount: 1000,
+          foodCount: 150,
+          newsCount: 25,
+          countriesCount: 50,
+          lastUpdated: new Date()
+        };
+      }
+
       const result = await Parse.Cloud.run('getAppStats');
       return result;
     } catch (error) {
@@ -397,6 +466,9 @@ export const authAPI = {
    * Get current user
    */
   getCurrentUser(): Parse.User | null {
+    if (!isParseAvailable()) {
+      return null; // No user when Parse is not available
+    }
     return Parse.User.current();
   },
 
@@ -404,6 +476,9 @@ export const authAPI = {
    * Check if user is logged in
    */
   isLoggedIn(): boolean {
+    if (!isParseAvailable()) {
+      return false; // Not logged in when Parse is not available
+    }
     return Parse.User.current() !== null;
   }
 };

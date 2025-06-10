@@ -1,80 +1,63 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Filter, Users, Globe } from 'lucide-react'
+import { Search, Filter, Users, Globe, Loader2 } from 'lucide-react'
 import ProfileCard from './ProfileCard'
-
-// Mock data for student profiles
-const mockProfiles = [
-  {
-    id: '1',
-    name: 'أحمد محمد',
-    nationality: 'إندونيسيا',
-    flag: '🇮🇩',
-    languages: ['العربية', 'الإندونيسية', 'الإنجليزية'],
-    skills: ['مطور مواقع', 'تصميم جرافيك', 'تدريس القرآن'],
-    rating: 5,
-    location: 'المبنى أ - الدور الثالث',
-    bio: 'طالب دكتوراه في علوم الحاسوب، أحب تعليم البرمجة ومساعدة الطلاب الجدد في التأقلم مع الحياة في القاهرة.',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-    isOnline: true
-  },
-  {
-    id: '2',
-    name: 'فاطمة عبدالله',
-    nationality: 'ماليزيا',
-    flag: '🇲🇾',
-    languages: ['العربية', 'الماليزية', 'الإنجليزية', 'الصينية'],
-    skills: ['طبخ آسيوي', 'ترجمة', 'تصوير فوتوغرافي'],
-    rating: 5,
-    location: 'المبنى ب - الدور الثاني',
-    bio: 'طالبة ماجستير في الدراسات الإسلامية، أحب الطبخ وتبادل الوصفات التقليدية من بلدي.',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-    isOnline: false
-  },
-  {
-    id: '3',
-    name: 'عمر حسن',
-    nationality: 'نيجيريا',
-    flag: '🇳🇬',
-    languages: ['العربية', 'الإنجليزية', 'الهوسا', 'اليوروبا'],
-    skills: ['كتابة إبداعية', 'خطابة', 'تنظيم فعاليات'],
-    rating: 4,
-    location: 'المبنى ج - الدور الأول',
-    bio: 'طالب ماجستير في الأدب العربي، أحب تنظيم الأمسيات الثقافية وورش الكتابة الإبداعية.',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-    isOnline: true
-  },
-  {
-    id: '4',
-    name: 'آمنة يوسف',
-    nationality: 'الصومال',
-    flag: '🇸🇴',
-    languages: ['العربية', 'الصومالية', 'الإنجليزية'],
-    skills: ['طب بديل', 'يوجا', 'استشارات نفسية'],
-    rating: 5,
-    location: 'المبنى د - الدور الثاني',
-    bio: 'طالبة دكتوراه في الطب النفسي، أقدم جلسات استرخاء ودعم نفسي للطلاب.',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-    isOnline: true
-  }
-]
+import { useStudentProfiles } from '../../hooks/useBackend'
+import LoadingSpinner from '../Common/LoadingSpinner'
 
 const CulturalExchange = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedNationality, setSelectedNationality] = useState('')
   const [selectedSkill, setSelectedSkill] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
 
-  const nationalities = [...new Set(mockProfiles.map(p => p.nationality))]
-  const allSkills = [...new Set(mockProfiles.flatMap(p => p.skills))]
-
-  const filteredProfiles = mockProfiles.filter(profile => {
-    const matchesSearch = profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         profile.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesNationality = !selectedNationality || profile.nationality === selectedNationality
-    const matchesSkill = !selectedSkill || profile.skills.includes(selectedSkill)
-    
-    return matchesSearch && matchesNationality && matchesSkill
+  // Fetch profiles from backend with filters
+  const {
+    profiles,
+    loading,
+    error,
+    totalCount,
+    totalPages,
+    refetch
+  } = useStudentProfiles({
+    nationality: selectedNationality || undefined,
+    skill: selectedSkill || undefined,
+    page: currentPage,
+    limit: 12
   })
+
+  // Get unique nationalities and skills for filters
+  const nationalities = useMemo(() => {
+    if (!profiles.length) return []
+    return [...new Set(profiles.map(p => p.nationality))]
+  }, [profiles])
+
+  const allSkills = useMemo(() => {
+    if (!profiles.length) return []
+    return [...new Set(profiles.flatMap(p => p.skills))]
+  }, [profiles])
+
+  // Filter profiles by search term (client-side for better UX)
+  const filteredProfiles = useMemo(() => {
+    if (!searchTerm) return profiles
+
+    return profiles.filter(profile => {
+      const matchesSearch = profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           profile.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
+      return matchesSearch
+    })
+  }, [profiles, searchTerm])
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedNationality, selectedSkill])
+
+  // Handle filter application
+  const handleApplyFilters = () => {
+    setCurrentPage(1)
+    refetch()
+  }
 
   return (
     <section id="cultural-exchange" className="py-20 bg-white">
@@ -145,14 +128,22 @@ const CulturalExchange = () => {
             </select>
 
             {/* Filter Button */}
-            <button className="btn-primary flex items-center justify-center gap-2">
-              <Filter className="w-5 h-5" />
+            <button
+              className="btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
+              onClick={handleApplyFilters}
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Filter className="w-5 h-5" />
+              )}
               <span className="font-arabic">تطبيق الفلتر</span>
             </button>
           </div>
         </motion.div>
 
-        {/* Results Count */}
+        {/* Results Count and Error Handling */}
         <motion.div
           className="mb-8"
           initial={{ opacity: 0 }}
@@ -160,34 +151,90 @@ const CulturalExchange = () => {
           transition={{ duration: 0.4 }}
           viewport={{ once: true }}
         >
-          <p className="text-navy-500/70 font-arabic">
-            تم العثور على {filteredProfiles.length} طالب
-          </p>
+          {error ? (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-red-600 font-arabic">
+                حدث خطأ في تحميل البيانات: {error}
+              </p>
+              <button
+                onClick={refetch}
+                className="mt-2 text-red-600 hover:text-red-800 underline font-arabic"
+              >
+                إعادة المحاولة
+              </button>
+            </div>
+          ) : (
+            <p className="text-navy-500/70 font-arabic">
+              {loading ? 'جاري التحميل...' : `تم العثور على ${filteredProfiles.length} طالب من أصل ${totalCount}`}
+            </p>
+          )}
         </motion.div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center py-16">
+            <LoadingSpinner />
+          </div>
+        )}
 
         {/* Profile Cards Grid */}
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.8, staggerChildren: 0.1 }}
-          viewport={{ once: true }}
-        >
-          {filteredProfiles.map((profile, index) => (
-            <motion.div
-              key={profile.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <ProfileCard {...profile} />
-            </motion.div>
-          ))}
-        </motion.div>
+        {!loading && !error && (
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.8, staggerChildren: 0.1 }}
+            viewport={{ once: true }}
+          >
+            {filteredProfiles.map((profile, index) => (
+              <motion.div
+                key={profile.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <ProfileCard {...profile} />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Pagination */}
+        {!loading && !error && totalPages > 1 && (
+          <motion.div
+            className="flex justify-center mt-12"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border border-gold-500/20 rounded-lg disabled:opacity-50 hover:bg-gold-500/10 font-arabic"
+              >
+                السابق
+              </button>
+
+              <span className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-arabic">
+                {currentPage} من {totalPages}
+              </span>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border border-gold-500/20 rounded-lg disabled:opacity-50 hover:bg-gold-500/10 font-arabic"
+              >
+                التالي
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* No Results */}
-        {filteredProfiles.length === 0 && (
+        {!loading && !error && filteredProfiles.length === 0 && (
           <motion.div
             className="text-center py-16"
             initial={{ opacity: 0 }}

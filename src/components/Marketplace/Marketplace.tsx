@@ -1,76 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { ShoppingBag, Search, Plus, TrendingUp } from 'lucide-react'
+import { ShoppingBag, Search, Plus, TrendingUp, Loader2 } from 'lucide-react'
 import ItemCard from './ItemCard'
-
-// Mock data for marketplace items
-const mockItems = [
-  {
-    id: '1',
-    title: 'لابتوب Dell XPS 13 مستعمل بحالة ممتازة',
-    price: 15000,
-    description: 'لابتوب Dell XPS 13 مستعمل لمدة سنة واحدة فقط، بحالة ممتازة جداً. مناسب للطلاب والمبرمجين. يأتي مع الشاحن الأصلي وحقيبة الحماية.',
-    location: 'المبنى أ - الدور الثالث',
-    category: 'إلكترونيات',
-    image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=300&fit=crop',
-    seller: 'أحمد محمد',
-    postedAt: 'منذ يومين',
-    views: 45,
-    isNegotiable: true
-  },
-  {
-    id: '2',
-    title: 'كتب طبية مستعملة - مجموعة كاملة',
-    price: 800,
-    description: 'مجموعة كتب طبية مستعملة في حالة جيدة جداً. تشمل كتب التشريح وعلم وظائف الأعضاء والأمراض الباطنة.',
-    location: 'المبنى ب - الدور الأول',
-    category: 'كتب ومراجع',
-    image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
-    seller: 'فاطمة عبدالله',
-    postedAt: 'منذ 3 أيام',
-    views: 23,
-    isNegotiable: false
-  },
-  {
-    id: '3',
-    title: 'دراجة هوائية للبيع - حالة ممتازة',
-    price: 1200,
-    description: 'دراجة هوائية مستعملة بحالة ممتازة، مناسبة للتنقل داخل الحرم الجامعي والمدينة. تم صيانتها مؤخراً.',
-    location: 'المبنى ج - موقف الدراجات',
-    category: 'رياضة ولياقة',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop',
-    seller: 'عمر حسن',
-    postedAt: 'منذ أسبوع',
-    views: 67,
-    isNegotiable: true
-  },
-  {
-    id: '4',
-    title: 'أدوات مطبخ كاملة للطلاب',
-    price: 300,
-    description: 'مجموعة أدوات مطبخ كاملة تشمل أواني الطبخ والأطباق والأكواب. مناسبة للطلاب الجدد.',
-    location: 'المبنى د - الدور الثاني',
-    category: 'أدوات منزلية',
-    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop',
-    seller: 'آمنة يوسف',
-    postedAt: 'منذ 4 أيام',
-    views: 34,
-    isNegotiable: true
-  },
-  {
-    id: '5',
-    title: 'ملابس شتوية - جاكيت وبلوفرات',
-    price: 500,
-    description: 'مجموعة ملابس شتوية تشمل جاكيت وبلوفرات بحالة جيدة جداً. مقاسات متنوعة.',
-    location: 'المبنى أ - الدور الثاني',
-    category: 'ملابس وأزياء',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop',
-    seller: 'سارة أحمد',
-    postedAt: 'منذ 5 أيام',
-    views: 28,
-    isNegotiable: false
-  }
-]
+import { useMarketplace } from '../../hooks/useBackend'
+import LoadingSpinner from '../Common/LoadingSpinner'
 
 const categories = ['جميع الفئات', 'إلكترونيات', 'كتب ومراجع', 'رياضة ولياقة', 'أدوات منزلية', 'ملابس وأزياء']
 
@@ -79,16 +12,46 @@ const Marketplace = () => {
   const [selectedCategory, setSelectedCategory] = useState('جميع الفئات')
   const [priceRange, setPriceRange] = useState({ min: '', max: '' })
   const [sortBy, setSortBy] = useState('newest')
+  const [currentPage, setCurrentPage] = useState(1)
 
-  const filteredItems = mockItems.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === 'جميع الفئات' || item.category === selectedCategory
-    const matchesPrice = (!priceRange.min || item.price >= parseInt(priceRange.min)) &&
-                        (!priceRange.max || item.price <= parseInt(priceRange.max))
-    
-    return matchesSearch && matchesCategory && matchesPrice
+  // Fetch marketplace items from backend
+  const {
+    items,
+    loading,
+    error,
+    totalCount,
+    totalPages,
+    refetch
+  } = useMarketplace({
+    category: selectedCategory !== 'جميع الفئات' ? selectedCategory : undefined,
+    minPrice: priceRange.min ? parseInt(priceRange.min) : undefined,
+    maxPrice: priceRange.max ? parseInt(priceRange.max) : undefined,
+    sortBy,
+    page: currentPage,
+    limit: 12
   })
+
+  // Filter items by search term (client-side for better UX)
+  const filteredItems = useMemo(() => {
+    if (!searchTerm) return items
+
+    return items.filter(item => {
+      const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           item.description.toLowerCase().includes(searchTerm.toLowerCase())
+      return matchesSearch
+    })
+  }, [items, searchTerm])
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedCategory, priceRange, sortBy])
+
+  // Handle filter application
+  const handleApplyFilters = () => {
+    setCurrentPage(1)
+    refetch()
+  }
 
   return (
     <section id="marketplace" className="py-20 bg-beige-500">
@@ -189,9 +152,25 @@ const Marketplace = () => {
               <option value="popular">الأكثر مشاهدة</option>
             </select>
           </div>
+
+          {/* Apply Filters Button */}
+          <div className="mt-4 text-center">
+            <button
+              className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
+              onClick={handleApplyFilters}
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Search className="w-5 h-5" />
+              )}
+              <span className="font-arabic">تطبيق الفلاتر</span>
+            </button>
+          </div>
         </motion.div>
 
-        {/* Results Count */}
+        {/* Results Count and Error Handling */}
         <motion.div
           className="mb-8"
           initial={{ opacity: 0 }}
@@ -199,34 +178,90 @@ const Marketplace = () => {
           transition={{ duration: 0.4 }}
           viewport={{ once: true }}
         >
-          <p className="text-navy-500/70 font-arabic">
-            تم العثور على {filteredItems.length} منتج
-          </p>
+          {error ? (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-red-600 font-arabic">
+                حدث خطأ في تحميل البيانات: {error}
+              </p>
+              <button
+                onClick={refetch}
+                className="mt-2 text-red-600 hover:text-red-800 underline font-arabic"
+              >
+                إعادة المحاولة
+              </button>
+            </div>
+          ) : (
+            <p className="text-navy-500/70 font-arabic">
+              {loading ? 'جاري التحميل...' : `تم العثور على ${filteredItems.length} منتج من أصل ${totalCount}`}
+            </p>
+          )}
         </motion.div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center py-16">
+            <LoadingSpinner />
+          </div>
+        )}
 
         {/* Items Grid */}
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.8, staggerChildren: 0.1 }}
-          viewport={{ once: true }}
-        >
-          {filteredItems.map((item, index) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <ItemCard {...item} />
-            </motion.div>
-          ))}
-        </motion.div>
+        {!loading && !error && (
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.8, staggerChildren: 0.1 }}
+            viewport={{ once: true }}
+          >
+            {filteredItems.map((item, index) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <ItemCard {...item} />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Pagination */}
+        {!loading && !error && totalPages > 1 && (
+          <motion.div
+            className="flex justify-center mt-12"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border border-gold-500/20 rounded-lg disabled:opacity-50 hover:bg-gold-500/10 font-arabic"
+              >
+                السابق
+              </button>
+
+              <span className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-arabic">
+                {currentPage} من {totalPages}
+              </span>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border border-gold-500/20 rounded-lg disabled:opacity-50 hover:bg-gold-500/10 font-arabic"
+              >
+                التالي
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* No Results */}
-        {filteredItems.length === 0 && (
+        {!loading && !error && filteredItems.length === 0 && (
           <motion.div
             className="text-center py-16"
             initial={{ opacity: 0 }}

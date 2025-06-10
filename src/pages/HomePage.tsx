@@ -6,13 +6,15 @@ import FoodSection from '../components/Food/FoodSection'
 
 const HomePage = () => {
   return (
-    <>
-      <HeroSection />
-      <CulturalExchange />
-      <Marketplace />
-      <NewsSection />
-      <FoodSection />
-    </>
+    <div className="min-h-screen bg-beige-500">
+      <div className="pt-16">
+        <HeroSection />
+        <CulturalExchange />
+        <Marketplace />
+        <NewsSection />
+        <FoodSection />
+      </div>
+    </div>
   )
 }
 
