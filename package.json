@@ -9,7 +9,10 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "setup-backend": "node scripts/setup-backend.js",
-    "deploy-cloud": "b4a deploy"
+    "setup-complete": "node scripts/setup-complete-backend.js",
+    "deploy-cloud": "node scripts/deploy-backend.js",
+    "deploy-b4a": "b4a deploy",
+    "seed-data": "node scripts/seed-sample-data.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
