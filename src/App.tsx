@@ -11,6 +11,7 @@ import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import ProfilePage from './pages/user/ProfilePage'
+import DashboardPage from './pages/user/DashboardPage'
 import StudentsPage from './pages/StudentsPage'
 import CreatePostPage from './pages/posts/CreatePostPage'
 import PostDetailPage from './pages/posts/PostDetailPage'
@@ -20,6 +21,14 @@ import EventsPage from './pages/EventsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import NewsManagement from './pages/admin/NewsManagement'
+
+// Marketplace Pages
+import MarketplacePage from './pages/MarketplacePage'
+import ItemDetailPage from './pages/marketplace/ItemDetailPage'
+import CreateItemPage from './pages/marketplace/CreateItemPage'
+
+// Food Pages
+import FoodPage from './pages/FoodPage'
 
 // Auth Context
 import { AuthProvider } from './contexts/AuthContext'
@@ -40,10 +49,22 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
+              {/* Marketplace Routes */}
+              <Route path="/marketplace" element={<MarketplacePage />} />
+              <Route path="/marketplace/item/:id" element={<ItemDetailPage />} />
+
+              {/* Food Routes */}
+              <Route path="/food" element={<FoodPage />} />
+
               {/* Protected Routes */}
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <ProfilePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <DashboardPage />
                 </ProtectedRoute>
               } />
               <Route path="/students" element={
@@ -79,6 +100,21 @@ function App() {
               <Route path="/notifications" element={
                 <ProtectedRoute>
                   <NotificationsPage />
+                </ProtectedRoute>
+              } />
+
+              {/* Protected Marketplace Routes */}
+              <Route path="/marketplace/create" element={
+                <ProtectedRoute>
+                  <CreateItemPage />
+                </ProtectedRoute>
+              } />
+
+              {/* Protected Food Routes */}
+              <Route path="/food/create" element={
+                <ProtectedRoute>
+                  {/* CreateFoodPage - to be created */}
+                  <div>Create Food Page - Coming Soon</div>
                 </ProtectedRoute>
               } />
 

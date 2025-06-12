@@ -262,6 +262,67 @@ export const marketplaceAPI = {
   },
 
   /**
+   * Get single marketplace item
+   */
+  async getItem(itemId: string): Promise<MarketplaceItem> {
+    try {
+      const result = await Parse.Cloud.run('getMarketplaceItem', { itemId });
+      return result;
+    } catch (error) {
+      console.error('Error fetching marketplace item:', error);
+      throw new Error('فشل في تحميل تفاصيل المنتج');
+    }
+  },
+
+  /**
+   * Update marketplace item
+   */
+  async updateItem(itemId: string, itemData: Partial<MarketplaceItem>): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      const result = await Parse.Cloud.run('updateMarketplaceItem', { itemId, itemData });
+      return result;
+    } catch (error) {
+      console.error('Error updating marketplace item:', error);
+      throw new Error('فشل في تحديث المنتج');
+    }
+  },
+
+  /**
+   * Delete marketplace item
+   */
+  async deleteItem(itemId: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      const result = await Parse.Cloud.run('deleteMarketplaceItem', { itemId });
+      return result;
+    } catch (error) {
+      console.error('Error deleting marketplace item:', error);
+      throw new Error('فشل في حذف المنتج');
+    }
+  },
+
+  /**
+   * Get user's marketplace items
+   */
+  async getUserItems(userId?: string): Promise<{
+    items: MarketplaceItem[];
+    totalCount: number;
+  }> {
+    try {
+      const result = await Parse.Cloud.run('getUserMarketplaceItems', { userId });
+      return result;
+    } catch (error) {
+      console.error('Error fetching user marketplace items:', error);
+      throw new Error('فشل في تحميل منتجات المستخدم');
+    }
+  },
+
+  /**
    * Increment item view count
    */
   async incrementViews(itemId: string): Promise<{ success: boolean; views: number }> {
