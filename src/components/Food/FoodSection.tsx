@@ -12,7 +12,6 @@ const FoodSection = () => {
     listings,
     loading,
     error,
-    totalCount,
     totalPages,
     refetch
   } = useFoodListings({

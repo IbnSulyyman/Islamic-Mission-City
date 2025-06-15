@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  Plus, 
-  Edit3, 
-  Trash2, 
-  Eye, 
+import {
+  Plus,
+  Edit3,
+  Trash2,
+  Eye,
   Search,
-  Filter,
   Calendar,
   User,
   Globe,

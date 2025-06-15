@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Users, 
-  Filter,
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
   Search,
   Plus,
   Star,
@@ -88,7 +87,7 @@ const categories = ['الكل', 'تقنية', 'ثقافي', 'أعمال', 'ري�
 const EventsPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('الكل')
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [, setShowCreateModal] = useState(false)
 
   const filteredEvents = mockEvents.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -11,7 +11,7 @@ interface ItemCardProps {
   category: string
   image: string
   seller: string
-  postedAt: string
+  postedAt: string | Date
   views: number
   isNegotiable: boolean
   viewMode?: 'grid' | 'list'
@@ -31,6 +31,15 @@ const ItemCard: React.FC<ItemCardProps> = ({
   isNegotiable,
   viewMode = 'grid'
 }) => {
+  const formatDate = (date: string | Date): string => {
+    if (typeof date === 'string') return date
+    return date.toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
   const handleContact = () => {
     const message = `السلام عليكم، أنا مهتم بـ ${title} المعروض بسعر ${price} جنيه.`
     const whatsappUrl = `https://wa.me/201234567890?text=${encodeURIComponent(message)}`
@@ -97,7 +106,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  <span className="font-arabic">{postedAt}</span>
+                  <span className="font-arabic">{formatDate(postedAt)}</span>
                 </div>
               </div>
 
@@ -177,7 +186,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
           <div className="flex items-center justify-between text-sm text-navy-500/70">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
-              <span className="font-arabic">{postedAt}</span>
+              <span className="font-arabic">{formatDate(postedAt)}</span>
             </div>
             <span className="font-arabic">البائع: {seller}</span>
           </div>

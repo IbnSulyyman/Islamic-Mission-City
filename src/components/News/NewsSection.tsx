@@ -44,7 +44,6 @@ const NewsSection = () => {
     news,
     loading,
     error,
-    totalCount,
     totalPages,
     refetch
   } = useNews({

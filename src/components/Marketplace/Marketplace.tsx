@@ -11,7 +11,7 @@ const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('جميع الفئات')
   const [priceRange, setPriceRange] = useState({ min: '', max: '' })
-  const [sortBy, setSortBy] = useState('newest')
+  const [sortBy, setSortBy] = useState<'newest' | 'price-low' | 'price-high' | 'popular'>('newest')
   const [currentPage, setCurrentPage] = useState(1)
 
   // Fetch marketplace items from backend
@@ -144,7 +144,7 @@ const Marketplace = () => {
             <select
               className="px-4 py-3 border border-gold-500/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-arabic text-right"
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => setSortBy(e.target.value as 'newest' | 'price-low' | 'price-high' | 'popular')}
             >
               <option value="newest">الأحدث</option>
               <option value="price-low">السعر: من الأقل للأعلى</option>
